@@ -1,12 +1,5 @@
 package com.zxing.android;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Vector;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -27,7 +20,6 @@ import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -37,6 +29,9 @@ import com.zxing.android.camera.CameraManager;
 import com.zxing.android.decoding.CaptureActivityHandler;
 import com.zxing.android.decoding.InactivityTimer;
 import com.zxing.android.view.ViewfinderView;
+
+import java.io.IOException;
+import java.util.Vector;
 
 public class CaptureActivity extends Activity implements Callback {
 	public static final String QR_RESULT = "RESULT";
@@ -201,7 +196,12 @@ public class CaptureActivity extends Activity implements Callback {
 		viewfinderView.drawViewfinder();
 
 	}
-
+	/**
+	 * get the QR code scanning result
+	 * Result obj
+	 * "结果：" + obj.getText()
+	 * "类型:" + obj.getBarcodeFormat()
+	 * */
 	public void handleDecode(Result obj, Bitmap barcode) {
 		inactivityTimer.onActivity();
 		playBeepSoundAndVibrate();
