@@ -18,7 +18,7 @@ public class MyDataBaseHelper extends SQLiteOpenHelper{
             + "student_id integer, "
             + "student_name text) ";
 
-    public static final String CLASS_11 = "creat table class_10 ("
+    public static final String CLASS_11 = "creat table class_11 ("
             + "id integer primary key autoincrement, "
             + "start_year integer, "
             + "college integer, "
