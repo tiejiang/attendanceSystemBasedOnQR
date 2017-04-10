@@ -1,6 +1,9 @@
+package com.zxing.android.database;
+
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.widget.Toast;
 
 /**
  *
@@ -10,7 +13,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class MyDataBaseHelper extends SQLiteOpenHelper{
 
-    public static final String CLASS_10 = "creat table class_10 ("
+    private Context mContext;
+    public static final String CLASS_10 = "create table class_10 ("
             + "id integer primary key autoincrement, "
             + "start_year integer, "
             + "college integer, "
@@ -18,7 +22,7 @@ public class MyDataBaseHelper extends SQLiteOpenHelper{
             + "student_id integer, "
             + "student_name text) ";
 
-    public static final String CLASS_11 = "creat table class_11 ("
+    public static final String CLASS_11 = "create table class_11 ("
             + "id integer primary key autoincrement, "
             + "start_year integer, "
             + "college integer, "
@@ -28,12 +32,14 @@ public class MyDataBaseHelper extends SQLiteOpenHelper{
 
     public MyDataBaseHelper(Context context, String name, SQLiteDatabase.CursorFactory factory, int version) {
         super(context, name, factory, version);
+        mContext = context;
     }
 
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         sqLiteDatabase.execSQL(CLASS_10);
         sqLiteDatabase.execSQL(CLASS_11);
+        Toast.makeText(mContext, "database create succeed !", Toast.LENGTH_SHORT).show();
 
     }
 
