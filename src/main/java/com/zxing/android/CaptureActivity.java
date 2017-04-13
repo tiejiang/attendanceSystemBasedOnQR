@@ -31,7 +31,6 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.Result;
 import com.zxing.android.camera.CameraManager;
 import com.zxing.android.database.DatabaseCreate;
-import com.zxing.android.database.MyDataBaseHelper;
 import com.zxing.android.decoding.CaptureActivityHandler;
 import com.zxing.android.decoding.InactivityTimer;
 import com.zxing.android.view.ViewfinderView;
@@ -54,7 +53,7 @@ public class CaptureActivity extends Activity implements Callback {
 	// private static final float BEEP_VOLUME = 0.10f;
 	private boolean vibrate;
 	CameraManager cameraManager;
-	private MyDataBaseHelper mDbHelper;
+	private SQLiteDatabase database;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -105,7 +104,6 @@ public class CaptureActivity extends Activity implements Callback {
 
 		hasSurface = false;
 		inactivityTimer = new InactivityTimer(this);
-		mDbHelper = new DatabaseCreate().createDb(this);
 	}
 
 	@Override
@@ -220,7 +218,6 @@ public class CaptureActivity extends Activity implements Callback {
 	//inquire
     public void inquireData(String stu_id){
 
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
 		Cursor mCursor;
         String ID = stu_id;
 		String startYear = "";
@@ -240,10 +237,27 @@ public class CaptureActivity extends Activity implements Callback {
 		}else{
 			Toast.makeText(this, "此ID不存在", Toast.LENGTH_SHORT).show();
 		}
+		database = SQLiteDatabase.openOrCreateDatabase(DatabaseCreate.DATABASE_PATH + DatabaseCreate.dbName, null);
+//        Cursor cursor = database.rawQuery("select * from test", null);
+//        if (cursor.getCount() > 0) {
+//            cursor.moveToFirst();
+//            try {
+//                // 解决中文乱码问题
+//                byte test[] = cursor.getBlob(0);
+//                String strtest = new String(test, "utf-8").trim();
+//
+//                // 看输出的信息是否正确
+//                System.out.println(strtest);
+//            } catch (UnsupportedEncodingException e) {
+//                // TODO Auto-generated catch block
+//                e.printStackTrace();
+//            }
+//        }
+//        cursor.close();
 
-		String queryStr = "SELECT * FROM class_10 WHERE start_year = '" + startYear + "' AND college = '" + stuCollege + "'";
+		String queryStr = "SELECT * FROM class_10 WHERE start_year = '" + startYear + "' AND college = '" + stuCollege + "' AND class = '" + stuClass + "' AND student_id = '" + stuID + "'";
 //		String queryStr = "SELECT * FROM class_10 WHERE student_name = '张剑'";
-		mCursor = db.rawQuery(queryStr, null);
+		mCursor = database.rawQuery(queryStr, null);
 		if (mCursor.moveToFirst()){
 			stuName = mCursor.getString(mCursor.getColumnIndex("student_name"));
 		}

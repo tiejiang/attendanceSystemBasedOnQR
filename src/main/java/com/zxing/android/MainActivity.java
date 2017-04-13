@@ -7,7 +7,6 @@ import android.view.View;
 import android.widget.Button;
 
 import com.zxing.android.database.DatabaseCreate;
-import com.zxing.android.database.MyDataBaseHelper;
 
 /**
  * Created by tiejiang on 17-4-10.
@@ -16,13 +15,13 @@ import com.zxing.android.database.MyDataBaseHelper;
 public class MainActivity extends Activity {
 
     private Button mLoginButton;
-    private MyDataBaseHelper mDbHelper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //check and copy database to the dir
+        new DatabaseCreate(this).createDb();
 
-        mDbHelper = new DatabaseCreate().createDb(this);
         mLoginButton = (Button)findViewById(R.id.login);
         mLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
