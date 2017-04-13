@@ -16,8 +16,6 @@
 
 package com.zxing.android.decoding;
 
-import java.util.Vector;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -32,6 +30,8 @@ import com.google.zxing.Result;
 import com.zxing.android.CaptureActivity;
 import com.zxing.android.MessageIDs;
 import com.zxing.android.view.ViewfinderResultPointCallback;
+
+import java.util.Vector;
 
 /**
  * This class handles all the messaging which comprises the state machine for capture.
@@ -90,6 +90,7 @@ public final class CaptureActivityHandler extends Handler {
             (Bitmap) bundle.getParcelable(DecodeThread.BARCODE_BITMAP);
         activity.handleDecode((Result) message.obj, barcode);
         break;
+
       case MessageIDs.decode_failed:
         // We're decoding as fast as possible, so when one decode fails, start another.
         state = State.PREVIEW;

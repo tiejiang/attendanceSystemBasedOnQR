@@ -7,6 +7,8 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetFileDescriptor;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -16,16 +18,20 @@ import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.Result;
 import com.zxing.android.camera.CameraManager;
+import com.zxing.android.database.DatabaseCreate;
+import com.zxing.android.database.MyDataBaseHelper;
 import com.zxing.android.decoding.CaptureActivityHandler;
 import com.zxing.android.decoding.InactivityTimer;
 import com.zxing.android.view.ViewfinderView;
@@ -48,6 +54,7 @@ public class CaptureActivity extends Activity implements Callback {
 	// private static final float BEEP_VOLUME = 0.10f;
 	private boolean vibrate;
 	CameraManager cameraManager;
+	private MyDataBaseHelper mDbHelper;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -98,6 +105,7 @@ public class CaptureActivity extends Activity implements Callback {
 
 		hasSurface = false;
 		inactivityTimer = new InactivityTimer(this);
+		mDbHelper = new DatabaseCreate().createDb(this);
 	}
 
 	@Override
@@ -206,7 +214,45 @@ public class CaptureActivity extends Activity implements Callback {
 		inactivityTimer.onActivity();
 		playBeepSoundAndVibrate();
 		showResult(obj, barcode);
+
+		inquireData(obj.getText());
 	}
+	//inquire
+    public void inquireData(String stu_id){
+
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+		Cursor mCursor;
+        String ID = stu_id;
+		String startYear = "";
+		String stuCollege = "";
+		String stuClass = "";
+		String stuID = "";
+		String stuName = "";
+		if (ID.length() == 10){
+			startYear = ID.substring(0, 4);
+			stuCollege = ID.substring(4, 6);
+			stuClass = ID.substring(6, 8);
+			if (ID.substring(8, 9).equals("0")){
+				stuID = ID.substring(9, 10);
+			}else {
+				stuID = ID.substring(8, 10);
+			}
+		}else{
+			Toast.makeText(this, "此ID不存在", Toast.LENGTH_SHORT).show();
+		}
+
+		String queryStr = "SELECT * FROM class_10 WHERE start_year = '" + startYear + "' AND college = '" + stuCollege + "'";
+//		String queryStr = "SELECT * FROM class_10 WHERE student_name = '张剑'";
+		mCursor = db.rawQuery(queryStr, null);
+		if (mCursor.moveToFirst()){
+			stuName = mCursor.getString(mCursor.getColumnIndex("student_name"));
+		}
+		Log.d("TIEJIANG", "query--startYear = " + startYear + ", stuCollege = " + stuCollege + ", stuClass = " + stuClass + ", stuID = " + stuID);
+		Log.d("TIEJIANG", "query--stuName = " + stuName);
+		mCursor.close();
+
+    }
+
 
 	private void showResult(final Result rawResult, Bitmap barcode) {
 

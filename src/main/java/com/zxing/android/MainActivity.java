@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import com.zxing.android.database.DatabaseCreate;
 import com.zxing.android.database.MyDataBaseHelper;
 
 /**
@@ -21,8 +22,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mDbHelper = new MyDataBaseHelper(this, "attendance.db", null, 1);
-        mDbHelper.getWritableDatabase();
+        mDbHelper = new DatabaseCreate().createDb(this);
         mLoginButton = (Button)findViewById(R.id.login);
         mLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
