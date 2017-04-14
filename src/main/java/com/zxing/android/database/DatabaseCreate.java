@@ -1,13 +1,9 @@
 package com.zxing.android.database;
 
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -41,7 +37,6 @@ public class DatabaseCreate {
                 InputStream is = mContext.getAssets().open(dbName);
                 // 输出流
                 OutputStream os = new FileOutputStream(DATABASE_PATH + dbName);
-
                 // 文件写入
                 byte[] buffer = new byte[1024];
                 int length;
@@ -80,65 +75,5 @@ public class DatabaseCreate {
 //        mDbHelper.getWritableDatabase();
 //        return mDbHelper;
     }
-
-
-
-    /**
-     * 判断数据库是否存在
-     * @return false or true
-     */
-    public boolean checkDataBase(){
-        SQLiteDatabase checkDB = null;
-        try{
-            String databaseFilename = DATABASE_PATH+dbName;
-            checkDB =SQLiteDatabase.openDatabase(databaseFilename, null,
-                    SQLiteDatabase.OPEN_READONLY);
-        }catch(SQLiteException e){
-
-        }
-        if(checkDB!=null){
-            checkDB.close();
-        }
-        return checkDB != null ? true : false;
-    }
-    /**
-     * 复制数据库到手机指定文件夹下
-     * @throws IOException
-     */
-    public void copyDataBase() throws IOException{
-        String databaseFilenames =DATABASE_PATH+dbName;
-        File dir = new File(DATABASE_PATH);
-        if(!dir.exists())//判断文件夹是否存在，不存在就新建一个
-            dir.mkdir();
-        FileOutputStream os = null;
-        try{
-            os = new FileOutputStream(databaseFilenames);//得到数据库文件的写入流
-        }catch(FileNotFoundException e){
-            e.printStackTrace();
-        }
-//        InputStream is = mContext.getResources().openRawResource(R.raw.test);//得到数据库文件的数据流
-        InputStream is = mContext.getAssets().open(dbName);
-        byte[] buffer = new byte[8192];
-        int count = 0;
-        try{
-
-            while((count=is.read(buffer))>0){
-                os.write(buffer, 0, count);
-                os.flush();
-            }
-        }catch(IOException e){
-
-        }
-        try{
-            is.close();
-            os.close();
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-    }
-
-
-
-
 
 }

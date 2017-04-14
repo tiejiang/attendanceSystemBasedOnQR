@@ -38,6 +38,8 @@ import com.zxing.android.view.ViewfinderView;
 import java.io.IOException;
 import java.util.Vector;
 
+import static android.R.attr.text;
+
 public class CaptureActivity extends Activity implements Callback {
 	public static final String QR_RESULT = "RESULT";
 
@@ -54,6 +56,11 @@ public class CaptureActivity extends Activity implements Callback {
 	private boolean vibrate;
 	CameraManager cameraManager;
 	private SQLiteDatabase database;
+	private String stuCollege = "";
+	private String stuClass = "";
+	private Vector allStudents;  // load all students in the class
+    private Vector mTemVector;   // load attendance students
+    private Vector stuAbsence;  // load absence students
 
 	/** Called when the activity is first created. */
 	@Override
@@ -61,39 +68,6 @@ public class CaptureActivity extends Activity implements Callback {
 		super.onCreate(savedInstanceState);
 
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		/*
-		 * this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-		 * WindowManager.LayoutParams.FLAG_FULLSCREEN);// 去掉信息栏
-		 * 
-		 * RelativeLayout layout = new RelativeLayout(this);
-		 * layout.setLayoutParams(new
-		 * ViewGroup.LayoutParams(LayoutParams.FILL_PARENT,
-		 * LayoutParams.FILL_PARENT));
-		 * 
-		 * this.surfaceView = new SurfaceView(this); this.surfaceView
-		 * .setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.FILL_PARENT,
-		 * LayoutParams.FILL_PARENT));
-		 * 
-		 * layout.addView(this.surfaceView);
-		 * 
-		 * this.viewfinderView = new ViewfinderView(this);
-		 * this.viewfinderView.setBackgroundColor(0x00000000);
-		 * this.viewfinderView.setLayoutParams(new
-		 * ViewGroup.LayoutParams(LayoutParams.FILL_PARENT,
-		 * LayoutParams.FILL_PARENT)); layout.addView(this.viewfinderView);
-		 * 
-		 * TextView status = new TextView(this); RelativeLayout.LayoutParams
-		 * params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT,
-		 * LayoutParams.WRAP_CONTENT);
-		 * params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-		 * params.addRule(RelativeLayout.CENTER_HORIZONTAL);
-		 * status.setLayoutParams(params);
-		 * status.setBackgroundColor(0x00000000);
-		 * status.setTextColor(0xFFFFFFFF); status.setText("请将条码置于取景框内扫描。");
-		 * status.setTextSize(14.0f);
-		 * 
-		 * layout.addView(status); setContentView(layout);
-		 */
 
 		setContentView(R.layout.activity_capture);
 		surfaceView = (SurfaceView) findViewById(R.id.surfaceview);
@@ -104,6 +78,16 @@ public class CaptureActivity extends Activity implements Callback {
 
 		hasSurface = false;
 		inactivityTimer = new InactivityTimer(this);
+		Intent mIntent = getIntent();
+		Bundle mBundle = mIntent.getExtras();
+		stuCollege = mBundle.getString("college");
+		stuClass = mBundle.getString("class");
+		//init Vector
+		mTemVector = new Vector();
+		stuAbsence = new Vector();
+		//load student from database
+		loadStudent(stuCollege, stuClass);
+		Log.d("TIEJIANG", "CaptureActivity stuCollege= " + stuCollege + ", stuClass= " + stuClass);
 	}
 
 	@Override
@@ -149,6 +133,15 @@ public class CaptureActivity extends Activity implements Callback {
 	@Override
 	protected void onDestroy() {
 		inactivityTimer.shutdown();
+        if (allStudents != null){
+            allStudents.removeAllElements();
+        }
+        if (mTemVector != null){
+            mTemVector.removeAllElements();
+        }
+        if (stuAbsence != null){
+            stuAbsence.removeAllElements();
+        }
 		super.onDestroy();
 	}
 
@@ -202,6 +195,46 @@ public class CaptureActivity extends Activity implements Callback {
 		viewfinderView.drawViewfinder();
 
 	}
+	//load student from database
+	private void loadStudent(String stu_college, final String stu_class){
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				allStudents = new Vector();
+				Cursor mCursor;
+				if (stu_class.equals("10")){
+					database = SQLiteDatabase.openOrCreateDatabase(DatabaseCreate.DATABASE_PATH + DatabaseCreate.dbName, null);
+					String sql = "SELECT * FROM class_10 ";
+					mCursor = database.rawQuery(sql, null);
+					if (mCursor.moveToFirst()){
+						do {
+							allStudents.add(mCursor.getString(mCursor.getColumnIndex("student_name")));
+						}while (mCursor.moveToNext());
+					}
+					// test code begin
+//					for (int i = 0; i < allStudents.size(); i ++){
+//						Log.d("TIEJIANG", "class_10 student_name= " + allStudents.get(i));
+//					}
+					// test code end
+				}else if (stu_class.equals("11")){
+					database = SQLiteDatabase.openOrCreateDatabase(DatabaseCreate.DATABASE_PATH + DatabaseCreate.dbName, null);
+					String sql = "SELECT * FROM class_11 ";
+					mCursor = database.rawQuery(sql, null);
+					if (mCursor.moveToFirst()){
+						do {
+							allStudents.add(mCursor.getString(mCursor.getColumnIndex("student_name")));
+						}while (mCursor.moveToNext());
+					}
+					// test code begin
+//					for (int i = 0; i < allStudents.size(); i ++){
+//						Log.d("TIEJIANG", "class_11 student_name= " + allStudents.get(i));
+//					}
+					// test code end
+				}
+
+			}
+		}).start();
+	}
 	/**
 	 * get the QR code scanning result
 	 * Result obj
@@ -209,14 +242,15 @@ public class CaptureActivity extends Activity implements Callback {
 	 * "类型:" + obj.getBarcodeFormat()
 	 * */
 	public void handleDecode(Result obj, Bitmap barcode) {
+		String stuName = "不存在";
 		inactivityTimer.onActivity();
 		playBeepSoundAndVibrate();
-		showResult(obj, barcode);
 
-		inquireData(obj.getText());
+		stuName = inquireData(obj.getText());
+		showResult(obj, barcode, stuName);
 	}
 	//inquire
-    public void inquireData(String stu_id){
+    public String inquireData(String stu_id){
 
 		Cursor mCursor;
         String ID = stu_id;
@@ -238,70 +272,121 @@ public class CaptureActivity extends Activity implements Callback {
 			Toast.makeText(this, "此ID不存在", Toast.LENGTH_SHORT).show();
 		}
 		database = SQLiteDatabase.openOrCreateDatabase(DatabaseCreate.DATABASE_PATH + DatabaseCreate.dbName, null);
-//        Cursor cursor = database.rawQuery("select * from test", null);
-//        if (cursor.getCount() > 0) {
-//            cursor.moveToFirst();
-//            try {
-//                // 解决中文乱码问题
-//                byte test[] = cursor.getBlob(0);
-//                String strtest = new String(test, "utf-8").trim();
-//
-//                // 看输出的信息是否正确
-//                System.out.println(strtest);
-//            } catch (UnsupportedEncodingException e) {
-//                // TODO Auto-generated catch block
-//                e.printStackTrace();
-//            }
-//        }
-//        cursor.close();
 
 		String queryStr = "SELECT * FROM class_10 WHERE start_year = '" + startYear + "' AND college = '" + stuCollege + "' AND class = '" + stuClass + "' AND student_id = '" + stuID + "'";
 //		String queryStr = "SELECT * FROM class_10 WHERE student_name = '张剑'";
 		mCursor = database.rawQuery(queryStr, null);
 		if (mCursor.moveToFirst()){
 			stuName = mCursor.getString(mCursor.getColumnIndex("student_name"));
+
 		}
 		Log.d("TIEJIANG", "query--startYear = " + startYear + ", stuCollege = " + stuCollege + ", stuClass = " + stuClass + ", stuID = " + stuID);
 		Log.d("TIEJIANG", "query--stuName = " + stuName);
 		mCursor.close();
-
+		return stuName!=null?stuName:"不存在";
     }
 
 
-	private void showResult(final Result rawResult, Bitmap barcode) {
+	private void showResult(final Result rawResult, Bitmap barcode, final String name) {
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
 		Drawable drawable = new BitmapDrawable(barcode);
 		builder.setIcon(drawable);
 
-		builder.setTitle("类型:" + rawResult.getBarcodeFormat() + "\n 结果：" + rawResult.getText());
-		builder.setPositiveButton("确定", new OnClickListener() {
+//		builder.setTitle("类型:" + rawResult.getBarcodeFormat() + "\n学号:" + rawResult.getText() + "\r\n姓名:" + name);
+		builder.setTitle("学号:" + rawResult.getText() + "\n姓名:" + name);
+		builder.setPositiveButton("结束考勤", new OnClickListener() {
 
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				dialog.dismiss();
+				mTemVector.add(name); // add the last student into the vector
+				//一次扫描完成
 				Intent intent = new Intent();
 				intent.putExtra("result", rawResult.getText());
 				setResult(RESULT_OK, intent);
-				finish();
+//				finish();
+				int result = checkoutAttendance(allStudents, mTemVector);
+				if (result == 1){
+
+				}else if (result == 0){
+					sendToHeadTeacher(stuAbsence);
+				}
 			}
 		});
-		builder.setNegativeButton("重新扫描", new OnClickListener() {
+		builder.setNegativeButton("确定", new OnClickListener() {
 
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				dialog.dismiss();
+                mTemVector.add(name);
+				Log.d("确定：TIEJIANG", "mTemVector= " + mTemVector);
 				restartPreviewAfterDelay(0L);
 			}
 		});
+//		builder.setNeutralButton("结束考勤", new OnClickListener() {
+//			@Override
+//			public void onClick(DialogInterface dialog, int which) {
+//				dialog.dismiss();
+//				//进行数据库的查询匹配并得出考勤结果
+//
+//
+//			}
+//		});
 		builder.setCancelable(false);
-		builder.show();
+		builder.create().show();
 
 		// Intent intent = new Intent();
 		// intent.putExtra(QR_RESULT, rawResult.getText());
 		// setResult(RESULT_OK, intent);
 		// finish();
+	}
+
+	public void sendToHeadTeacher(final Vector absence_stu){
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle("缺席学生名单");
+		builder.setMessage();
+		builder.setNegativeButton("发送到班主任", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				for (int i = 0; i < absence_stu.size(); i ++){
+
+				}
+
+				finish();
+			}
+		});
+		builder.setCancelable(false);
+		builder.create().show();
+	}
+	public int checkoutAttendance(Vector all_students, Vector temp_vector){
+        String tempStu;
+			//test code begin
+//			for (int j = 0; j < all_students.size(); j ++){
+//				Log.d("TIEJIANG", "all_students value= " + all_students.get(j));
+//			}
+//			Log.d("TIEJIANG", "temp_vector.size= " + temp_vector.size());
+//            for (int j = 0; j < temp_vector.size(); j ++){
+//                Log.d("TIEJIANG", "temp_vector value= " + temp_vector.get(j));
+//            }
+
+        if (all_students.size() == temp_vector.size()){
+            return 1;  //full attendance
+        }else {
+            for (int i = 0; i < all_students.size(); i ++){
+                tempStu = String.valueOf(all_students.get(i));
+                if (!temp_vector.contains(tempStu)){
+                    stuAbsence.add(tempStu);
+                }
+            }
+            //test code begin
+            for (int j = 0; j < stuAbsence.size(); j ++){
+                Log.d("TIEJIANG", "stuAbsence value= " + stuAbsence.get(j));
+            }
+            //test code end
+            return 0;
+        }
 	}
 
 	public void restartPreviewAfterDelay(long delayMS) {
