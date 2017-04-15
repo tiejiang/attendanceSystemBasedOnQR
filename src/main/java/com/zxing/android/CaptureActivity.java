@@ -20,11 +20,14 @@ import android.os.Handler;
 import android.os.Vibrator;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.zxing.BarcodeFormat;
@@ -33,12 +36,11 @@ import com.zxing.android.camera.CameraManager;
 import com.zxing.android.database.DatabaseCreate;
 import com.zxing.android.decoding.CaptureActivityHandler;
 import com.zxing.android.decoding.InactivityTimer;
+import com.zxing.android.sms.SMS;
 import com.zxing.android.view.ViewfinderView;
 
 import java.io.IOException;
 import java.util.Vector;
-
-import static android.R.attr.text;
 
 public class CaptureActivity extends Activity implements Callback {
 	public static final String QR_RESULT = "RESULT";
@@ -253,6 +255,7 @@ public class CaptureActivity extends Activity implements Callback {
     public String inquireData(String stu_id){
 
 		Cursor mCursor;
+		String queryStr = "";
         String ID = stu_id;
 		String startYear = "";
 		String stuCollege = "";
@@ -272,8 +275,12 @@ public class CaptureActivity extends Activity implements Callback {
 			Toast.makeText(this, "此ID不存在", Toast.LENGTH_SHORT).show();
 		}
 		database = SQLiteDatabase.openOrCreateDatabase(DatabaseCreate.DATABASE_PATH + DatabaseCreate.dbName, null);
+		if (stuClass.equals("10")){
+			queryStr = "SELECT * FROM class_10 WHERE start_year = '" + startYear + "' AND college = '" + stuCollege + "' AND class = '" + stuClass + "' AND student_id = '" + stuID + "'";
+		}else if (stuClass.equals("11")){
+			queryStr = "SELECT * FROM class_11 WHERE start_year = '" + startYear + "' AND college = '" + stuCollege + "' AND class = '" + stuClass + "' AND student_id = '" + stuID + "'";
+		}
 
-		String queryStr = "SELECT * FROM class_10 WHERE start_year = '" + startYear + "' AND college = '" + stuCollege + "' AND class = '" + stuClass + "' AND student_id = '" + stuID + "'";
 //		String queryStr = "SELECT * FROM class_10 WHERE student_name = '张剑'";
 		mCursor = database.rawQuery(queryStr, null);
 		if (mCursor.moveToFirst()){
@@ -309,7 +316,7 @@ public class CaptureActivity extends Activity implements Callback {
 //				finish();
 				int result = checkoutAttendance(allStudents, mTemVector);
 				if (result == 1){
-
+					noOneAbsence();
 				}else if (result == 0){
 					sendToHeadTeacher(stuAbsence);
 				}
@@ -343,20 +350,52 @@ public class CaptureActivity extends Activity implements Callback {
 		// finish();
 	}
 
-	public void sendToHeadTeacher(final Vector absence_stu){
+	public void noOneAbsence(){
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle("缺席学生名单");
-		builder.setMessage();
-		builder.setNegativeButton("发送到班主任", new OnClickListener() {
+		builder.setTitle("本次考勤没有学生缺席");
+		builder.setMessage("谢谢使用二维码考勤系统");
+		builder.setNegativeButton("确认", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				for (int i = 0; i < absence_stu.size(); i ++){
-
-				}
 
 				finish();
 			}
 		});
+		builder.setCancelable(false);
+		builder.create().show();
+	}
+
+	public void sendToHeadTeacher(final Vector absence_stu){
+
+
+		LayoutInflater mLayoutInflater = getLayoutInflater();
+		View absenceView = mLayoutInflater.inflate(R.layout.stu_absence_txt, null);
+		TextView absence_txt = (TextView) absenceView.findViewById(R.id.stu_absence);
+		//统计缺席学生名单（为显示做准备）
+		for (int i = 0; i < absence_stu.size(); i ++){
+			if (i > 0){
+				absence_txt.append(", ");
+			}
+			absence_txt.append(String.valueOf(absence_stu.get(i)));
+		}
+		final String sendMsg = "班主任老师, " + "你好,你们班缺席xx课的学生名单如下：" + "\n" + absence_txt.getText().toString();
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle("缺席学生名单");
+		builder.setView(absenceView);
+		builder.setNegativeButton("发送到班主任", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+
+				new SMS(CaptureActivity.this).send("18845292770", sendMsg);
+				finish();
+			}
+		});
+        builder.setPositiveButton("取消", new OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                finish();
+            }
+        });
 		builder.setCancelable(false);
 		builder.create().show();
 	}
